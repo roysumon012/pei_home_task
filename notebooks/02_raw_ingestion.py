@@ -10,8 +10,6 @@
 # Run Config
 %run ./00_config
 
-# Install python dependency required for reading excel files
-%pip install openpyxl -q
 
 
 

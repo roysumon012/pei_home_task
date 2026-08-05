@@ -14,7 +14,7 @@ Although this solution is intentionally lightweight for the assessment, the foll
 - Layer-specific write strategy is intentional:
   - Bronze uses append-only raw history.
   - Silver uses key-based Delta `MERGE` upserts for idempotent incremental loads.
-  - Gold uses overwrite full recompute for deterministic aggregates.
+  - Gold uses overwrite full recompute for deterministic aggregates — acceptable for the assessment dataset but not recommended at scale (see Future Enhancements).
 
 ## Code Quality
 - Modular code using reusable helper modules (`src/`).
@@ -62,6 +62,7 @@ The following data quality issues were identified in the source data. No remedia
 - **`validate_business_rules` is not invoked in any pipeline notebook.** The function exists in `src/validations.py` with correct sanitised column references (`sales`, `quantity`) and is covered by unit tests, but is not called anywhere in the pipeline. It should be wired into `02_raw_ingestion.py` once the applicable business rules are confirmed.
 
 ## Future Enhancements
+- **Incremental Gold aggregation via Change Data Feed (CDF):** At scale, overwriting the entire Gold table on each run is expensive — it requires scanning and recomputing the full Silver dataset regardless of how many records actually changed. A more efficient pattern is to enable Delta Change Data Feed on the Silver order table (`ALTER TABLE silver_order SET TBLPROPERTIES ('delta.enableChangeDataFeed' = 'true')`), then in `06_aggregation.py` read only the changed rows since the last processed version using `spark.read.format("delta").option("readChangeFeed", "true").option("startingVersion", last_processed_version)`. From the CDF output, derive the set of affected aggregation keys (e.g. year + category + sub-category + customer), recompute aggregates for those keys only against the full Silver table, and then `MERGE` the results into the Gold table by those keys. This reduces the Gold compute cost from O(full dataset) to O(changed keys) per run, which scales significantly better for large or high-frequency pipelines.
 - Define and implement data cleansing rules for the known source quality issues listed above.
 - Wire `validate_business_rules` into `02_raw_ingestion.py` once applicable business rules are confirmed.
 - Add explicit `batch_id`/ingestion-run identifier in Bronze to make latest-batch filtering and lineage stronger than timestamp-only selection.

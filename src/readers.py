@@ -13,12 +13,13 @@ from src.utils import sanitize_column_names
 logger = logging.getLogger(__name__)
 
 def read_customers(spark: SparkSession, path: str) -> DataFrame:
-    """Read customer Excel file using pandas + openpyxl."""
+    """Read customer Excel file using Databricks built-in Excel reader."""
     try:
         logger.info("Reading customer file: %s", path)
-        import pandas as pd
-        pdf = pd.read_excel(path)
-        df = spark.createDataFrame(pdf)
+        df = (spark.read.format("excel")
+              .schema(customer_schema)
+              .option("header", "true")
+              .load(path))
         df = sanitize_column_names(df)
         logger.info("Customer records loaded: %s", df.count())
         return df

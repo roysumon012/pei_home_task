@@ -7,7 +7,7 @@
 - Source data is assumed to be valid UTF-8 where applicable.
 - Order dates are formatted as `d/M/yyyy` in the source JSON file; this pattern is applied during parsing.
 - Column names containing spaces or special characters (e.g., `Sub-Category`, `Customer ID`) are sanitised to snake_case at read time via `sanitize_column_names`.
-- Explicit Spark schemas are applied when reading Products (CSV) and Orders (JSON) to enforce data types at ingestion. Customer data is read via pandas (Excel) and the schema is inferred by pandas/Spark.
+- Explicit Spark schemas are applied when reading Products (CSV) and Orders (JSON) to enforce data types at ingestion. Customer data is read using the Databricks built-in Excel reader (`spark.read.format("excel")`) and the schema is inferred by Spark.
 
 ## Source Data Quality
 - The source data was found to contain quality issues. As no business rules were defined in the task requirements to govern how these should be cleaned, record-level cleansing was not performed. The known issues are:
